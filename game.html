@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flappy bird</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+
+    <canvas id="gameCanvas" width="600" height="550"> </canvas>
+    <div class="bottomCon">
+        <h2 class="title"> Flappybird </h2>
+
+        <button class="stitch-up" type="button" onClick="window.location.reload()">Reset Game</button>
+        <p class="instructions"> Press space bar to jump <br> Dont hit the pipes or the bottom <br> Press reset button to play again </p>
+        <h1 class="credit"> </h1>
+
+
+    </div>
+    <script src="player.js"></script>
+    <script src="pipe.js"></script>
+    <script>
+        window.onkeydown = function(e) { // Code which stops the space key scrolling , vital for when webpage is small stops the game glithing out
+            var elem = e.target.nodename;
+            if( elem !== 'TEXTAREA' && elem != 'INPUT' ) {
+                return !(e.keyCode == 32);
+        }
+        };
+        var canvas, canvasContext;
+
+        window.onload = function() { // On load function which loads up the canvas , sets to 2d , looks for space key pressed and released and sets the interval to 1000/50 , refresh rate like 50fps
+            canvas = document.getElementById('gameCanvas');
+            canvasContext = canvas.getContext('2d');
+
+            document.addEventListener('keydown', keyPressed);
+            document.addEventListener('keyup', keyReleased);
+
+            setInterval(mainLoop, 1000 / 50);
+
+
+        }
+        var gameRun = true;
+        var highScore = false;
+        var xPos = 0;
+        var score = 0;
+        var realScore= 0;
+        var gameover = false;
+        var pxPos = 0;
+        var pyPos = 0;
+        const PLAYER_WIDTH = 30;
+        const PLAYER_HEIGHT = 40;
+        var Xspeed = 0;
+        var Yspeed = 0;
+        const SPACE_KEY = 32;
+        var spaceKeyPressed = false;
+        var pipes = [];
+        var pipesTotal = 99;
+        var pipeCount = 0;
+        var pipePearsCount = 0;
+        var yRand = 0;
+        
+        var settingUp = true;
+        var pipePairCount = 0;
+        var Gap = 100;
+
+        var yVelocity = -2;
+        var diff = '';
+        var bird = new Player(pxPos, pyPos, PLAYER_WIDTH, PLAYER_HEIGHT, "yellow", Xspeed, Yspeed)
+
+        var playerName = prompt("Please enter your name", "Flappy Bird"); // Prompt on load of game to ask the player for their name 
+
+        while (diff != 'easy' && diff != 'hard') { // Prompt to ask the player for their level of difficulty
+            diff = prompt("What level of difficulty do you want ?", "Easy or Hard") || ''; // Acutal prompt to ask for diffuculty level
+            diff = diff.toLowerCase(); // Code so all responces are aceepted inculding lower case 
+        }
+
+        if (diff == 'easy') { // If statement if answer is = easy , changes the x speed to 2 
+            Xspeed = 5;
+            console.log("easy is 5");
+        }
+        if (diff == 'hard') { // If statement if answer is = hard , changes the x speed to 5 
+            Xspeed = 8;
+            console.log("hard is 8");
+        }
+
+        function mainLoop() { // Main loop function , used to run all functions listed bellow on loop, like the bird movement and pipe draw 
+            if (gameRun == true) {
+                colorRect(0, 0, canvas.width, canvas.height, 'lightgreen'); // Color rect to draw the main canvas 
+                bird.playerDraw(); // Loading Draw function for the bird 
+                bird.playerMove(); // Loading Move function for player
+                bird.hasCollided();
+                scoreCorrect();
+                if (settingUp) { // Code to keep track of pipes, to run draw function 
+                    //makePipes();
+                    for (i = 0; i < pipesTotal; i++) {
+                        up();
+                        bottom();
+                    }
+                    settingUp = false;
+                }
+
+                if (pipes.length > 0) {
+                    pipes.forEach(function(pipe, i) {
+                        pipe.pipeDraw(); // Loads pipe draw function
+                        pipe.pipeMove(); // Loads pipe move function 
+                        //                    pipe.score();
+                        if (pipe.x < 0) { // Once pipe has left the canvas delete code , helps reduce stress on game etc 
+                            delete pipes[i];
+                            score++;
+                        }
+                    });
+                    pipes = pipes.filter(item => item !== undefined);
+                }
+                colorText("Score: " + realScore, 30, 30, '20px Arial', 'white');
+                if (realScore >= 99) { // Looking for the player getting high score and pipes running out, change gameFalse to false 
+                    console.log("detected high score");
+                    gameRun = false;
+                }
+                
+           }
+            
+        else { // if gameRun = false then draw yellow canvas and draw text for 
+                if (realScore >= 50) { // If score is greater than 34 then display Congrats text with score 
+                console.log("high score working");
+                colorRect(0, 0, canvas.width, canvas.height, 'yellow'); // Color rect to draw the main canvas 
+                colorText("Congrats " + playerName + " you've reached the highscore of: " + realScore, canvas.width /6, canvas.height / 2, '15px Arial', 'black');
+            }
+                else { // If player doesnt reach end then display Game over text
+                colorRect(0, 0, canvas.width, canvas.height, 'yellow'); // Color rect to draw the main canvas 
+                colorText("Game Over " + playerName + " your score was: " + realScore, canvas.width /4 , canvas.height / 2, '15px Arial', 'black');
+                console.log("Else is running");
+            }
+        }
+        
+        }
+        function colorRect(x, y, w, h, c) { // Colorrect function to draw the canvas background
+            canvasContext.fillStyle = c;
+            canvasContext.fillRect(x, y, w, h);
+        }
+
+        function colorText(src, x, y, f, c) { // Colorrect function to draw the text for score and game over 
+            canvasContext.fillStyle = c;
+            canvasContext.fillText(src, x, y);
+            canvasContext.font = f;
+        }
+
+        function keyPressed(evt) { // Function looking for the space key being pressed down, sets the var spaceKeyPressed to truce once detected  
+            if (evt.keyCode == SPACE_KEY) {
+                spaceKeyPressed = true;
+            }
+        }
+
+        function keyReleased(evt) { // Function looking for the space key being released, sets the var spaceKeyPressed to false once detected  
+            if (evt.keyCode == SPACE_KEY) {
+                spaceKeyPressed = false;
+            }
+        }
+        function scoreCorrect () { // Simple function which halfs score to give real score as score is cacualted by pipes crossing canvas , which is two at time 
+            realScore = score / 2;
+            
+        }
+
+        function up() { // function for the top part of the bar 
+            Gap = Math.floor(Math.random() * (250 - 230) + 230); // Using a math random to generate random distance between gaps, give the game increased level of diffuculty and keeps the player guessing whilst also used to generate height of top and bottom pipes to insure thier a gape etc 
+            var yPos = 0; // Using a math random to generate random y pos
+            var xPos = canvas.width + pipePairCount * Gap; // x pos is through anvas.width + pipePairCount * Gap, this keeps even number of pipe for top and bottom inline, as the pipeCount increases , this helps keep track of the number of pipes and keep them inline together
+            const WIDTH = 40; // Sets the thickness of the pipes 
+            var height = Math.floor(Math.random() * (200 - 170) + 170); // math random to generate random height, which keeps the player guessing
+
+            var p = new Pipe(xPos, yPos, WIDTH, height, "blue", Xspeed) // Pushes the top pipe to draw function to draw onto canvas 
+            pipes.push(p);
+        }
+
+        function bottom() { // funtion for the bottom part of the bar
+            var yPos = canvas.height - Math.floor(Math.random() * ((canvas.height * 0.4) - 100) + 100); // Using a math random * the canvas height to generate random y pos
+            var xPos = canvas.width + pipePairCount * Gap; // x pos is through anvas.width + pipePairCount * Gap, this keeps even number of pipe for top and bottom inline, as the pipeCount increases , this helps keep track of the number of pipes and keep them inline together 
+            const WIDTH = 40; // Sets the thickness of the pipes 
+            var height = Math.floor(Math.random() * (300 - 200) + 200); // math random to generate random height, which keeps the player guessing
+            console.log('Gap: ' + Gap + ' pipeCount: ' + pipePairCount + "=" + xPos);
+            var p = new Pipe(xPos, yPos, WIDTH, height, "blue", Xspeed) // Pushes the bottom pipe to draw function to draw onto canvas 
+            pipes.push(p);
+
+            pipePairCount++; // Once both top and bottom draw functions have been run / drawn , increases the pipeCount by 1, which allows the two top and bottom parts to keep together, through the yPos caculatations. 
+        }
+
+    </script>
+
+
+
+
+</body>
+
+</html>
